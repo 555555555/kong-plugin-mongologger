@@ -9,7 +9,7 @@
 -- The handlers are based on the OpenResty handlers, see the OpenResty docs for details
 -- on when exactly they are invoked and what limitations each handler has.
 ---------------------------------------------------------------------------------------------
-
+local mongo = require 'mongo'
 
 
 local plugin = {
@@ -69,17 +69,26 @@ function plugin:access(plugin_conf)
   kong.log.inspect(plugin_conf)   -- check the logs for a pretty-printed config!
   kong.service.request.set_header(plugin_conf.request_header, "this is on a request")
 
+  local client = mongo.Client('mongodb://127.18.0.2')
+  local collection = client:getCollection('WhatsAppMessaging', 'ApiRequest')
+
+  local req_body, err, mimetype = kong.request.get_body()
+  local raw_req_body  = kong.request.get_raw_body()
+  local response_body = kong.response.get_raw_body()
+
+  kong.log(">>>>>>>>>>>>>> received body: ", req_body)
+  kong.log(">>>>>>>>>>>>>> received body: ", response_body)
+
+  if (req_body == nil) then
+      return
+  end
+
+  local id = mongo.ObjectID()
+  collection:insert{_id = id, logDate = os.date("%d-%m-%Y %H:%M:%S"), apiName ='sendmessage',recipientNumber=req_body.to,clientIpAddress='',upstreamUri='',requestBody=raw_req_body,responseBody=response_body,validWhatsAppNumber='true',contact_WaId=req_body.to,result='true',templateName=req_body.template.name}
+
+
+
 end --]]
-
-
--- runs in the 'header_filter_by_lua_block'
-function plugin:header_filter(plugin_conf)
-
-  -- your custom code here, for example;
-  kong.response.set_header(plugin_conf.response_header, "this is on the response")
-
-end --]]
-
 
 --[[ runs in the 'body_filter_by_lua_block'
 function plugin:body_filter(plugin_conf)
