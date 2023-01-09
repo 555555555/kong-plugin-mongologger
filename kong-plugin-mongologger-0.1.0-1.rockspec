@@ -25,6 +25,7 @@ description = {
 
 
 dependencies = {
+	"lua-mongo >= 1.2"
 }
 
 
